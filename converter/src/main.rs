@@ -38,5 +38,5 @@ fn fahrenheit_to_celcius(x: f64) -> f64 {
 }
 
 fn celcius_to_fahrenheit(x: f64) -> f64 {
-    x * ( 5.0 / 9.0) + 32.02
+    x * ( 9.0 / 5.0) + 32.0
 }
