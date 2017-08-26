@@ -1,42 +1,70 @@
+use std::fmt;
 use std::io;
+
+/* Further ideas
+  * Handle errors properly
+  * Mode checked twice, make it DRY
+  * Temperature / Conversions Module
+  * Handle Kelvin degrees
+*/
+
+enum Temperature<F64> {
+    Celsius(F64),
+    Fahrenheit(F64),
+}
+
+impl fmt::Display for Temperature<f64> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Temperature::Celsius(x) => write!(f, "{:.*}° Celsius", 1, x),
+            Temperature::Fahrenheit(x) => write!(f, "{:.*}° Fahrenheit", 1, x),
+        }
+    }
+}
+
+fn convert(temp: Temperature<f64>) -> Temperature<f64> {
+    match temp {
+        Temperature::Celsius(x) => Temperature::Fahrenheit(x * (9.0 / 5.0) + 32.0),
+        Temperature::Fahrenheit(x) => Temperature::Celsius((x - 32.0) * (5.0 / 9.0)),
+    }
+}
+
 
 fn main() {
    loop {
+        // Print options
         println!("[1] Convert Fahrenheit->Celsius");
         println!("[2] Convert Celsius->Fahrenheit");
-        println!("[3] Quit");
+        println!("[Q] Quit");
 
+        // Get mode from user
         let mut mode = String::new();
-        let converter: fn(f64) -> f64;
-        let mut degrees = String::new();
-        let mut units = ["Fahrenheit", "Celsius"];
 
         io::stdin().read_line(&mut mode)
             .expect("Failed to read line");
 
+        // Get degrees from user
         match mode.trim() {
-            "1" => { converter = fahrenheit_to_celcius; },
-            "2" => { converter = celcius_to_fahrenheit; units.reverse() },
-            "3" => break,
+            "1" => println!("Enter degrees in Fahrenheit"),
+            "2" => println!("Enter degrees in Celsius"),
+            "Q" | "q" => break,
             _ => continue,
         }
 
-        println!("Enter degrees to be converted in {}:", units[0]);
+        let mut degrees = String::new();
         io::stdin().read_line(&mut degrees)
             .expect("Failed to read line");
-        let mut degrees: f64 = degrees.trim().parse()
+        let degrees: f64 = degrees.trim().parse()
             .expect("Please type a number!");
 
-        degrees = converter(degrees);
-        let result = format!("{:.*}", 1, degrees);
-        println!("That makes {} degrees in {}!", result, units[1]);
+        // Calculate result
+        let result;
+        match mode.trim() {
+            "1" => { result = convert(Temperature::Fahrenheit(degrees)) },
+            _ => { result = convert(Temperature::Celsius(degrees)) },
+        }
+
+        // Print result
+        println!("That makes {}!", result);
     }
-}
-
-fn fahrenheit_to_celcius(x: f64) -> f64 {
-    (x - 32.0) * (5.0 / 9.0)
-}
-
-fn celcius_to_fahrenheit(x: f64) -> f64 {
-    x * ( 9.0 / 5.0) + 32.0
 }
