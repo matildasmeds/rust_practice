@@ -3,11 +3,14 @@ use std::io;
 
 /* Further ideas
   * Handle errors properly
-  * Mode checked twice, make it DRY
   * Temperature / Conversions Module
   * Handle Kelvin degrees
+  * Perhaps Conversion mode could be expressed as enum too
+  * Temperature Enum generic over numeric types?
 */
 
+#[derive(Debug)]
+#[derive(PartialEq)]
 enum Temperature<F64> {
     Celsius(F64),
     Fahrenheit(F64),
@@ -16,19 +19,22 @@ enum Temperature<F64> {
 impl fmt::Display for Temperature<f64> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Temperature::Celsius(x) => write!(f, "{:.*}° Celsius", 1, x),
-            Temperature::Fahrenheit(x) => write!(f, "{:.*}° Fahrenheit", 1, x),
+            Temperature::Celsius(x) => write!(f, "{}° Celsius", x),
+            Temperature::Fahrenheit(x) => write!(f, "{}° Fahrenheit", x),
         }
     }
 }
 
 fn convert(temp: Temperature<f64>) -> Temperature<f64> {
     match temp {
-        Temperature::Celsius(x) => Temperature::Fahrenheit(x * (9.0 / 5.0) + 32.0),
-        Temperature::Fahrenheit(x) => Temperature::Celsius((x - 32.0) * (5.0 / 9.0)),
+        Temperature::Celsius(x) => Temperature::Fahrenheit(round(x * (9.0 / 5.0) + 32.0)),
+        Temperature::Fahrenheit(x) => Temperature::Celsius(round((x - 32.0) * (5.0 / 9.0))),
     }
 }
 
+fn round(x: f64) -> f64 {
+    (x * 10.0).round() / 10.0
+}
 
 fn main() {
    loop {
@@ -66,5 +72,22 @@ fn main() {
 
         // Print result
         println!("That makes {}!", result);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_converts_fahrenheit_to_celsius() {
+        assert_eq!(convert(Temperature::Fahrenheit(100.0)), Temperature::Celsius(37.8));
+        assert_eq!(convert(Temperature::Fahrenheit(-20.0)), Temperature::Celsius(-28.9));
+    }
+
+    #[test]
+    fn it_converts_celsius_to_fahrenheit() {
+        assert_eq!(convert(Temperature::Celsius(100.0)), Temperature::Fahrenheit(212.0));
+        assert_eq!(convert(Temperature::Celsius(-20.0)), Temperature::Fahrenheit(-4.0));
     }
 }
