@@ -1,4 +1,3 @@
-use std::str::*;
 use std::fs::File;
 use std::error::Error;
 use std::io::prelude::*;
@@ -9,12 +8,21 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &'static str> {
-        if args.len() < 3 {
-            return Err("Expected command line arguments: query_string filename");
-        }
-        let query = String::from_str(&args[1]).unwrap(); // another option would be clone
-        let filename = String::from_str(&args[2]).unwrap();
+    // called with std::env::args() from main
+    // parameter is trait bound, to enable testing the method
+    pub fn new<T: Iterator<Item=String>>(mut args: T) -> Result<Config, &'static str> {
+        args.next(); // get rid of first arg
+
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Expected a query string"),
+        };
+
+        let filename = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Expected a filename"),
+        };
+
         Ok(Config { query, filename })
     }
 }
@@ -46,20 +54,59 @@ pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
 mod test {
     use super::*;
 
+    // Config::new iterates over std::env::Args object,
+    // and Args does not have a public constructor.
+    // Hence, to test Config::new, we need to create
+    // a collection of "arguments" of our own, which
+    // satisfies Iterator trait for Item type String.
+    #[derive(Debug)]
+    struct ArgsCollection {
+        args: Vec<String>,
+        index: usize,
+    }
+
+    impl Iterator for ArgsCollection {
+        type Item = String;
+        fn next(&mut self) -> Option<String> {
+            if self.index >= self.args.len() {
+                return None;
+            }
+            let result = self.args[self.index].clone();
+            self.index += 1;
+            Some(result)
+        }
+    }
+
     #[test]
     fn test_config_new() {
-        let mut args = vec![String::from("doesn't count")];
-        let config = Config::new(&args);
+        let args = ArgsCollection {
+            args: vec![String::from("Ignore first arg")],
+            index: 0,
+        };
+        let config = Config::new(args);
         assert!(config.is_err());
 
-        args.push(String::from("oh hai"));
-        let config = Config::new(&args);
+        let args = ArgsCollection {
+            args: vec![String::from("Still ignored..."),
+                       String::from("oh hai"),
+            ],
+            index: 0,
+        };
+        let config = Config::new(args);
         assert!(config.is_err());
 
-        args.push(String::from("lolcat.filez"));
-        let config = Config::new(&args).unwrap();
-        assert_eq!(config.query, args[1]);
-        assert_eq!(config.filename, args[2]);
+        let args = ArgsCollection {
+            args: vec![String::from("Hello"),
+                       String::from("iz lolcat"),
+                       String::from("lolfilez.txt"),
+            ],
+            index: 0,
+        };
+        let config = Config::new(args);
+        assert!(config.is_ok());
+        let config = config.unwrap();
+        assert_eq!(config.query, "iz lolcat");
+        assert_eq!(config.filename, "lolfilez.txt");
     }
 
     #[test]

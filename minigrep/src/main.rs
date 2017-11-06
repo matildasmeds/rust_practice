@@ -1,19 +1,14 @@
 extern crate minigrep;
 
-use std::env;
-use std::process;
-
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    let config = minigrep::Config::new(&args).unwrap_or_else(|err| {
+    let config = minigrep::Config::new(std::env::args()).unwrap_or_else(|err| {
         println!("Error reading arguments: {}", err);
-        process::exit(1);
+        std::process::exit(1);
     });
 
     if let Err(e) = minigrep::run(config) {
         println!("Application error: {}", e);
-        process::exit(1);
+        std::process::exit(1);
     };
 }
 
