@@ -1,5 +1,0 @@
-[package]
-name = "cached_fn"
-version = "0.1.0"
-
-[dependencies]
